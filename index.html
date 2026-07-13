@@ -3447,8 +3447,10 @@ function sortOrder(name) {
   var n = name.toLowerCase();
   if (n.indexOf('catalogue') > -1 || n.indexOf('catalog') > -1) return 0;
   if (n.indexOf('proposal')  > -1 || n.indexOf('quote')   > -1) return 1;
-  if (n.indexOf('schedule')  > -1 || n.indexOf('sched')   > -1) return 1;
-  return 2;
+  if (n.indexOf('schedule')  > -1 || n.indexOf('sched')   > -1) return 2;
+  if (n.indexOf('door set')  > -1 || n.indexOf('doorset') > -1) return 3;
+  if (n.indexOf('boq')       > -1)                               return 4;
+  return 5;
 }
 
 function buildSectionList() {
@@ -3589,14 +3591,27 @@ async function buildPdfViewer() {
     page.drawImage(img, { x:0, y:0, width:canvas.width, height:canvas.height });
   }
 
-  // Helper: copy all pages from a PDF blob
+  // Standard page size every merged page is normalized to (A4 portrait, points).
+  // Source pages are scaled to fit inside this frame (preserving aspect ratio,
+  // no cropping or distortion) and centered — so a landscape source page will
+  // show with white space above/below rather than being rotated or stretched.
+  var TARGET_PAGE_WIDTH = 595.28;
+  var TARGET_PAGE_HEIGHT = 841.89;
+
+  // Helper: copy all pages from a PDF blob, normalized to TARGET_PAGE_WIDTH x TARGET_PAGE_HEIGHT
   async function addPdfBlob(blob) {
     var ab  = await blob.arrayBuffer();
     var src = await PDFDocument.load(ab, { ignoreEncryption: true });
     var indices = src.getPageIndices();
-    var pages = await mergedPdf.copyPages(src, indices);
-    pages.forEach(function(p){ mergedPdf.addPage(p); });
-    return pages.length;
+    var embedded = await mergedPdf.embedPdf(src, indices);
+    embedded.forEach(function(ep) {
+      var page = mergedPdf.addPage([TARGET_PAGE_WIDTH, TARGET_PAGE_HEIGHT]);
+      var scale = Math.min(TARGET_PAGE_WIDTH / ep.width, TARGET_PAGE_HEIGHT / ep.height);
+      var w = ep.width * scale;
+      var h = ep.height * scale;
+      page.drawPage(ep, { x: (TARGET_PAGE_WIDTH - w) / 2, y: (TARGET_PAGE_HEIGHT - h) / 2, width: w, height: h });
+    });
+    return embedded.length;
   }
 
   // renderToCanvas no longer used — cover pages added directly as PDFs
