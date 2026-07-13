@@ -1786,7 +1786,7 @@ body {
       </div>
       <div class="folder-details">
         <div class="folder-label">Project Files from Doors</div>
-        <div class="folder-path-text">\\C:\Users\asmck\OneDrive - Criterion Industries\Documents\ENTRO Proposal Generator\Project Files from Doors\</div>
+        <div class="folder-path-text">\\CRI-FIL-01\Data-Store\ENTRO Proposal Generator\Project Files from Doors</div>
       </div>
     </div>
     <div class="folder-band-right">
@@ -2154,22 +2154,7 @@ body {
             <button class="btn btn-ghost btn-sm" id="ai-gen-btn" onclick="generateAICoverLetter()">Generate with AI</button>
           </div>
 
-          <textarea class="textarea" id="cover-letter-text" rows="20" style="font-size:12px;line-height:1.7;font-family:'ABCFavorit',sans-serif">Dear [Client Contact],
-
-Thank you for providing ENTRO the opportunity to present this submission.
-
-At ENTRO, we deliver tailored door hardware solutions aligned with each project's design, functionality, and documentation. Our approach includes detailed door-by-door scheduling, premium and made-to-order finishes, and nationally stocked standard ranges for efficient supply.
-
-We support seamless installation through labelled packing, coordinated logistics, and compatibility with master keying and access control systems via our national network.
-
-Throughout the project, we maintain a proactive and collaborative approach providing samples, verifying finishes, and ensuring documentation is accurate and up to date, while prioritising clear communication and a smooth, stress-free delivery.
-
-Thank you again for the opportunity, and we look forward to discussing the project further.
-
-Warm regards,
-[Consultant Name]
-[Consultant Title]
-ENTRO</textarea>
+          <textarea class="textarea" id="cover-letter-text" rows="20" style="font-size:12px;line-height:1.7;font-family:'ABCFavorit',sans-serif"></textarea>
         </div>
 
         <!-- Preview aside -->
@@ -2912,6 +2897,25 @@ var consultants = {
   glenn:   { name:'Glenn Bass',         title:'Specification Manager',        state:null,  email:'glenn@entro.com.au',   sig:null },
   other:   { name:'[Consultant Name]', title:'[Title]',                      state:null,  email:'',                     sig:null }
 };
+// Standard cover-letter body text — single source of truth. Editable via
+// Settings > Cover Letter. Used both for the textarea's initial content
+// (buildCoverLetterDefaultText) and as the base wording fed to the AI
+// cover-letter generator (generateAICoverLetter), so the two never drift.
+var DEFAULT_COVER_LETTER_BODY = [
+  'Thank you for providing ENTRO the opportunity to present this submission.',
+  '',
+  'At ENTRO, we deliver tailored door hardware solutions aligned with each project\'s design, functionality, and documentation. Our approach includes detailed door-by-door scheduling, premium and made-to-order finishes, and nationally stocked standard ranges for efficient supply.',
+  '',
+  'We support seamless installation through labelled packing, coordinated logistics, and compatibility with master keying and access control systems via our national network.',
+  '',
+  'Throughout the project, we maintain a proactive and collaborative approach providing samples, verifying finishes, and ensuring documentation is accurate and up to date, while prioritising clear communication and a smooth, stress-free delivery.',
+  '',
+  'Thank you again for the opportunity, and we look forward to discussing the project further.'
+].join('\n');
+function buildCoverLetterDefaultText(){
+  return 'Dear [Client Contact],\n\n' + DEFAULT_COVER_LETTER_BODY +
+    '\n\nWarm regards,\n[Consultant Name]\n[Consultant Title]\nENTRO';
+}
 // Signature images embedded as base64 data URIs.
 // To add/update a signature: encode the PNG as base64 and set it here.
 // Patrick Goldsmith's signature is pending a clean PNG upload.
@@ -3077,18 +3081,8 @@ async function generateAICoverLetter() {
   var cSel = document.getElementById('consultant-select');
   var c = consultants[cSel ? cSel.value : 'other']||consultants.other;
   var get = function(id){ var e=document.getElementById(id); return e?e.value:''; };
-  // Base wording from ENTRO standard cover letter
-  var baseWording = [
-    'Thank you for providing ENTRO the opportunity to present this submission.',
-    '',
-    'At ENTRO, we deliver tailored door hardware solutions aligned with each project\'s design, functionality, and documentation. Our approach includes detailed door-by-door scheduling, premium and made-to-order finishes, and nationally stocked standard ranges for efficient supply.',
-    '',
-    'We support seamless installation through labelled packing, coordinated logistics, and compatibility with master keying and access control systems via our national network.',
-    '',
-    'Throughout the project, we maintain a proactive and collaborative approach providing samples, verifying finishes, and ensuring documentation is accurate and up to date, while prioritising clear communication and a smooth, stress-free delivery.',
-    '',
-    'Thank you again for the opportunity, and we look forward to discussing the project further.'
-  ].join('\n');
+  // Base wording from ENTRO standard cover letter (Settings > Cover Letter)
+  var baseWording = DEFAULT_COVER_LETTER_BODY;
 
   // Get first name for salutation
   var contactFull  = get('client-contact') || '';
@@ -3306,6 +3300,10 @@ function hsTypeaheadInit() {
 window.addEventListener('load', function() {
   if (HS_TYPEAHEAD_ENABLED) hsTypeaheadInit();
   if (!GENERATE_LINK_ENABLED) { var _glb = document.getElementById('gensync-btn'); if (_glb) _glb.style.display = 'none'; }
+
+  // Populate the cover-letter textarea from the shared default (Settings > Cover Letter)
+  var _letterTa = document.getElementById('cover-letter-text');
+  if (_letterTa && !_letterTa.value) { _letterTa.value = buildCoverLetterDefaultText(); }
 
   // Date
   var dateEl = document.getElementById('app-date');
@@ -4682,24 +4680,51 @@ async function downloadProposal() {
           <button class="btn" onclick="verifySettingsPasscode()">Unlock</button>
         </div>
         <div id="settings-panel" style="display:none;">
-          <div class="section-title">Team &amp; HubSpot Owner IDs</div>
-          <p style="color:var(--text2);font-size:12.5px;margin-bottom:12px;line-height:1.5;">Edit consultant details below. Changes apply to this session immediately &mdash; click <strong>Download updated Generator</strong> to bake them into a new file and push it to GitHub Pages so the whole team gets them.</p>
-          <table class="tbl" style="width:100%;">
-            <thead>
-              <tr>
-                <th style="text-align:left;">Name</th>
-                <th style="text-align:left;">Title</th>
-                <th style="text-align:left;">State</th>
-                <th style="text-align:left;">Email</th>
-                <th style="text-align:left;">HubSpot Owner ID</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="settings-team-body"></tbody>
-          </table>
-          <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
-            <input class="input" id="settings-new-name" placeholder="New consultant name" style="flex:1;">
-            <button class="btn-sm" onclick="_settingsAdd()">+ Add</button>
+          <div class="tab-row" style="margin-bottom:16px;">
+            <button class="tab-btn active" onclick="_settingsShowTab('team', this)">Team</button>
+            <button class="tab-btn" onclick="_settingsShowTab('letter', this)">Cover Letter</button>
+            <button class="tab-btn" onclick="_settingsShowTab('sigs', this)">Signatures</button>
+            <button class="tab-btn" onclick="_settingsShowTab('templates', this)">Templates</button>
+          </div>
+
+          <div id="settings-tab-team">
+            <div class="section-title">Team &amp; HubSpot Owner IDs</div>
+            <p style="color:var(--text2);font-size:12.5px;margin-bottom:12px;line-height:1.5;">Edit consultant details below. Changes apply to this session immediately &mdash; click <strong>Download updated Generator</strong> to bake them into a new file and push it to GitHub Pages so the whole team gets them.</p>
+            <table class="tbl" style="width:100%;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Name</th>
+                  <th style="text-align:left;">Title</th>
+                  <th style="text-align:left;">State</th>
+                  <th style="text-align:left;">Email</th>
+                  <th style="text-align:left;">HubSpot Owner ID</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="settings-team-body"></tbody>
+            </table>
+            <div style="display:flex;gap:8px;margin-top:14px;align-items:center;">
+              <input class="input" id="settings-new-name" placeholder="New consultant name" style="flex:1;">
+              <button class="btn-sm" onclick="_settingsAdd()">+ Add</button>
+            </div>
+          </div>
+
+          <div id="settings-tab-letter" style="display:none;">
+            <div class="section-title">Standard Cover Letter Text</div>
+            <p style="color:var(--text2);font-size:12.5px;margin-bottom:12px;line-height:1.5;">This is the default body used for new proposals and as the base wording for the AI generator. The salutation and sign-off are added automatically &mdash; only the middle paragraphs are edited here.</p>
+            <textarea class="textarea" id="settings-letter-text" rows="14" style="width:100%;font-size:12px;line-height:1.6;font-family:'ABCFavorit',sans-serif;"></textarea>
+          </div>
+
+          <div id="settings-tab-sigs" style="display:none;">
+            <div class="section-title">Signatures</div>
+            <p style="color:var(--text2);font-size:12.5px;margin-bottom:12px;line-height:1.5;">Upload a PNG signature per consultant. Changes apply to this session immediately and are baked into the downloaded file, same as Team.</p>
+            <div id="settings-sigs-body"></div>
+          </div>
+
+          <div id="settings-tab-templates" style="display:none;">
+            <div class="section-title">Template PDFs</div>
+            <p style="color:var(--text2);font-size:12.5px;margin-bottom:12px;line-height:1.5;">Replace the fixed reference documents included in every proposal. Does not affect the Cover Page, Cover Letter, Pricing Summary, Acceptance, or Back Cover &mdash; those are generated separately.</p>
+            <div id="settings-templates-body"></div>
           </div>
         </div>
       </div>
@@ -4715,6 +4740,20 @@ async function downloadProposal() {
   var SETTINGS_PASSCODE = 'entro2026';
   var _settingsUnlocked = false;
   var _settingsTeam = null; // array of {key,name,title,state,hubspotId}, excludes 'other'
+  var _settingsSigsWorking = {};      // key -> data URL or null, working copy of window._consultantSigs
+  var _settingsTemplatesWorking = {}; // spanId -> data URL, only holds PENDING replacements
+
+  var SETTINGS_TEMPLATE_SLOTS = [
+    { id: 'capability-pdf-src',   label: 'Capability Statement' },
+    { id: 'warranty-pdf-src',     label: 'Warranty Statement' },
+    { id: 'apartment-pdf-src',    label: 'Apartment Portfolio (all states)' },
+    { id: 'office-pdf-src',       label: 'Office Portfolio (all states)' },
+    { id: 'contacts-vic-pdf-src', label: 'Key Contacts — VIC' },
+    { id: 'contacts-nsw-pdf-src', label: 'Key Contacts — NSW' },
+    { id: 'contacts-qld-pdf-src', label: 'Key Contacts — QLD' },
+    { id: 'contacts-sa-pdf-src',  label: 'Key Contacts — SA' },
+    { id: 'tc-pdf-src',           label: 'Terms & Conditions' }
+  ];
 
   function _settingsLoadTeam(){
     var arr = [];
@@ -4762,6 +4801,25 @@ async function downloadProposal() {
     document.getElementById('settings-footer').style.display = '';
     _settingsTeam = _settingsLoadTeam();
     _settingsRenderTeam();
+    var letterTa = document.getElementById('settings-letter-text');
+    if (letterTa) letterTa.value = DEFAULT_COVER_LETTER_BODY;
+    _settingsSigsWorking = {};
+    for (var k in (window._consultantSigs || {})) { _settingsSigsWorking[k] = window._consultantSigs[k]; }
+    _settingsRenderSigs();
+    _settingsTemplatesWorking = {};
+    _settingsRenderTemplates();
+    _settingsShowTab('team', document.querySelector('#settings-panel .tab-btn'));
+  }
+
+  function _settingsShowTab(name, btn){
+    ['team', 'letter', 'sigs', 'templates'].forEach(function(n){
+      var d = document.getElementById('settings-tab-' + n);
+      if (d) d.style.display = (n === name) ? '' : 'none';
+    });
+    if (btn && btn.parentElement) {
+      Array.prototype.forEach.call(btn.parentElement.children, function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
   }
 
   function _esc(s){ return (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
@@ -4792,6 +4850,7 @@ async function downloadProposal() {
     if (!confirm('Remove this consultant from the team list?')) return;
     _settingsTeam.splice(i, 1);
     _settingsRenderTeam();
+    _settingsRenderSigs();
   }
   function _settingsAdd(){
     var nameEl = document.getElementById('settings-new-name');
@@ -4803,6 +4862,73 @@ async function downloadProposal() {
     _settingsTeam.push({ key: key, name: name, title: '', state: '', email: '', hubspotId: '' });
     nameEl.value = '';
     _settingsRenderTeam();
+    _settingsRenderSigs();
+  }
+
+  function _settingsRenderSigs(){
+    var body = document.getElementById('settings-sigs-body');
+    if (!body || !_settingsTeam) return;
+    var rows = '';
+    for (var i = 0; i < _settingsTeam.length; i++) {
+      var t = _settingsTeam[i];
+      var sig = _settingsSigsWorking[t.key];
+      var preview = sig
+        ? '<img src="' + sig + '" style="height:32px;max-width:150px;object-fit:contain;background:#fff;border-radius:4px;padding:3px;">'
+        : '<span style="color:var(--text3);font-size:12px;">No signature</span>';
+      rows += '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--b1);">' +
+        '<div style="width:150px;font-size:13px;flex:0 0 auto;">' + _esc(t.name) + '</div>' +
+        '<div style="width:160px;flex:0 0 auto;">' + preview + '</div>' +
+        '<input type="file" accept="image/png,image/jpeg" style="font-size:11px;flex:1 1 auto;" onchange="_settingsSigFileChange(' + i + ',this)">' +
+        (sig ? '<button class="btn-icon" onclick="_settingsClearSig(' + i + ')" title="Remove"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' : '') +
+        '</div>';
+    }
+    body.innerHTML = rows;
+  }
+  function _settingsSigFileChange(i, inputEl){
+    var file = inputEl.files && inputEl.files[0];
+    if (!file || !_settingsTeam[i]) return;
+    var key = _settingsTeam[i].key;
+    var reader = new FileReader();
+    reader.onload = function(e){
+      _settingsSigsWorking[key] = e.target.result;
+      _settingsRenderSigs();
+    };
+    reader.readAsDataURL(file);
+  }
+  function _settingsClearSig(i){
+    if (!_settingsTeam[i]) return;
+    _settingsSigsWorking[_settingsTeam[i].key] = null;
+    _settingsRenderSigs();
+  }
+
+  function _settingsRenderTemplates(){
+    var body = document.getElementById('settings-templates-body');
+    if (!body) return;
+    var rows = '';
+    for (var i = 0; i < SETTINGS_TEMPLATE_SLOTS.length; i++) {
+      var slot = SETTINGS_TEMPLATE_SLOTS[i];
+      var el = document.getElementById(slot.id);
+      var hasSrc = !!(el && el.getAttribute('data-src'));
+      var pending = _settingsTemplatesWorking[slot.id];
+      rows += '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--b1);">' +
+        '<div style="width:220px;font-size:13px;flex:0 0 auto;">' + _esc(slot.label) +
+          (pending ? ' <span style="color:var(--accent2);font-size:11px;">(new file selected)</span>' : '') + '</div>' +
+        '<div style="width:80px;font-size:11px;color:var(--text3);flex:0 0 auto;">' + (hasSrc ? 'PDF loaded' : 'Missing') + '</div>' +
+        '<input type="file" accept="application/pdf" style="font-size:11px;flex:1 1 auto;" onchange="_settingsTemplateFileChange(\'' + slot.id + '\',this)">' +
+        '</div>';
+    }
+    body.innerHTML = rows;
+  }
+  function _settingsTemplateFileChange(spanId, inputEl){
+    var file = inputEl.files && inputEl.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') { alert('Please choose a PDF file.'); inputEl.value = ''; return; }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      _settingsTemplatesWorking[spanId] = e.target.result;
+      _settingsRenderTemplates();
+    };
+    reader.readAsDataURL(file);
   }
 
   function _settingsApplyToRuntime(){
@@ -4820,6 +4946,22 @@ async function downloadProposal() {
     CONSULTANT_OWNERS = newOwners;
     window._consultantSigs = window._consultantSigs || {};
     for (var k in newConsultants) { if (!(k in window._consultantSigs)) window._consultantSigs[k] = null; }
+
+    // Cover letter default body
+    var letterTa = document.getElementById('settings-letter-text');
+    if (letterTa) DEFAULT_COVER_LETTER_BODY = letterTa.value;
+
+    // Signatures — copy the working set (edited via Settings > Signatures) into the live map
+    for (var sk in _settingsSigsWorking) { window._consultantSigs[sk] = _settingsSigsWorking[sk]; }
+
+    // Templates — only touch spans that actually got a new file selected
+    for (var spanId in _settingsTemplatesWorking) {
+      var newSrc = _settingsTemplatesWorking[spanId];
+      if (!newSrc) continue;
+      var el = document.getElementById(spanId);
+      if (el) el.setAttribute('data-src', newSrc);
+    }
+
     _settingsRebuildDropdown();
   }
 
@@ -4840,7 +4982,7 @@ async function downloadProposal() {
 
   function settingsSaveAndApply(){
     _settingsApplyToRuntime();
-    alert('Team changes applied for this session. Click "Download updated Generator" to save them permanently and push the new file to GitHub Pages.');
+    alert('Changes applied for this session (Team, Cover Letter, Signatures, Templates). Click "Download updated Generator" to save them permanently and push the new file to GitHub Pages.');
   }
 
   function settingsDownloadUpdatedGenerator(){
@@ -4867,6 +5009,24 @@ async function downloadProposal() {
       var newOwnersBlock = 'var CONSULTANT_OWNERS = {\n' + ownerLines.join(',\n') + '\n};';
       var oldOwnersRe = /var CONSULTANT_OWNERS = \{[\s\S]*?\n\};/;
       if (oldOwnersRe.test(html)) html = html.replace(oldOwnersRe, newOwnersBlock);
+
+      // Cover letter default body — single source of truth used by the textarea default and the AI generator
+      var letterLines = DEFAULT_COVER_LETTER_BODY.split('\n').map(function(line){ return '  ' + JSON.stringify(line); });
+      var newLetterBlock = 'var DEFAULT_COVER_LETTER_BODY = [\n' + letterLines.join(',\n') + '\n].join(\'\\n\');';
+      var oldLetterRe = /var DEFAULT_COVER_LETTER_BODY = \[[\s\S]*?\]\.join\('\\n'\);/;
+      if (oldLetterRe.test(html)) html = html.replace(oldLetterRe, newLetterBlock);
+
+      // Signatures — window._consultantSigs map (base64 data URLs or null)
+      var sigLines = [];
+      for (var sk2 in window._consultantSigs) {
+        var sv = window._consultantSigs[sk2];
+        sigLines.push('  ' + sk2 + ':  ' + (sv ? JSON.stringify(sv) : 'null'));
+      }
+      var newSigsBlock = 'window._consultantSigs = {\n' + sigLines.join(',\n') + '\n};';
+      var oldSigsRe = /window\._consultantSigs = \{[\s\S]*?\n\};/;
+      if (oldSigsRe.test(html)) html = html.replace(oldSigsRe, newSigsBlock);
+      // Template PDFs (*-pdf-src spans) are already baked in — their data-src attributes were
+      // updated on the live DOM by _settingsApplyToRuntime() before outerHTML was captured above.
 
       var blob = new Blob([html], { type: 'text/html' });
       var url = URL.createObjectURL(blob);
